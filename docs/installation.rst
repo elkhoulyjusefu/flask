@@ -1,144 +1,55 @@
-Installation
-============
+from flask import Flask, render_template, request, redirect, url_for
+from flask_sqlalchemy import SQLAlchemy
 
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+db = SQLAlchemy(app)
 
-Python Version
---------------
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50))
+    surname = db.Column(db.String(50))
+    age = db.Column(db.Integer)
+    email = db.Column(db.String(100), unique=True)
+    password = db.Column(db.String(100))
 
-We recommend using the latest version of Python. Flask supports Python 3.8 and newer.
+@app.route('/')
+def home():
+    return render_template('index.html')
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        name = request.form['name']
+        surname = request.form['surname']
+        age = request.form['age']
+        email = request.form['email']
+        password = request.form['password']
 
-Dependencies
-------------
+        new_user = User(name=name, surname=surname, age=age, email=email, password=password)
+        db.session.add(new_user)
+        db.session.commit()
 
-These distributions will be installed automatically when installing Flask.
+        return redirect(url_for('login'))
 
-* `Werkzeug`_ implements WSGI, the standard Python interface between
-  applications and servers.
-* `Jinja`_ is a template language that renders the pages your application
-  serves.
-* `MarkupSafe`_ comes with Jinja. It escapes untrusted input when rendering
-  templates to avoid injection attacks.
-* `ItsDangerous`_ securely signs data to ensure its integrity. This is used
-  to protect Flask's session cookie.
-* `Click`_ is a framework for writing command line applications. It provides
-  the ``flask`` command and allows adding custom management commands.
-* `Blinker`_ provides support for :doc:`signals`.
+    return render_template('register.html')
 
-.. _Werkzeug: https://palletsprojects.com/p/werkzeug/
-.. _Jinja: https://palletsprojects.com/p/jinja/
-.. _MarkupSafe: https://palletsprojects.com/p/markupsafe/
-.. _ItsDangerous: https://palletsprojects.com/p/itsdangerous/
-.. _Click: https://palletsprojects.com/p/click/
-.. _Blinker: https://blinker.readthedocs.io/
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
 
+        user = User.query.filter_by(email=email, password=password).first()
 
-Optional dependencies
-~~~~~~~~~~~~~~~~~~~~~
+        if user:
+            return "Login successful"
+        else:
+            return "Login failed"
 
-These distributions will not be installed automatically. Flask will detect and
-use them if you install them.
+    return render_template('login.html')
 
-* `python-dotenv`_ enables support for :ref:`dotenv` when running ``flask``
-  commands.
-* `Watchdog`_ provides a faster, more efficient reloader for the development
-  server.
+if __name__ == '__main__':
+    db.create_all()
+    app.run(debug=True)
 
-.. _python-dotenv: https://github.com/theskumar/python-dotenv#readme
-.. _watchdog: https://pythonhosted.org/watchdog/
-
-
-greenlet
-~~~~~~~~
-
-You may choose to use gevent or eventlet with your application. In this
-case, greenlet>=1.0 is required. When using PyPy, PyPy>=7.3.7 is
-required.
-
-These are not minimum supported versions, they only indicate the first
-versions that added necessary features. You should use the latest
-versions of each.
-
-
-Virtual environments
---------------------
-
-Use a virtual environment to manage the dependencies for your project, both in
-development and in production.
-
-What problem does a virtual environment solve? The more Python projects you
-have, the more likely it is that you need to work with different versions of
-Python libraries, or even Python itself. Newer versions of libraries for one
-project can break compatibility in another project.
-
-Virtual environments are independent groups of Python libraries, one for each
-project. Packages installed for one project will not affect other projects or
-the operating system's packages.
-
-Python comes bundled with the :mod:`venv` module to create virtual
-environments.
-
-
-.. _install-create-env:
-
-Create an environment
-~~~~~~~~~~~~~~~~~~~~~
-
-Create a project folder and a :file:`.venv` folder within:
-
-.. tabs::
-
-   .. group-tab:: macOS/Linux
-
-      .. code-block:: text
-
-         $ mkdir myproject
-         $ cd myproject
-         $ python3 -m venv .venv
-
-   .. group-tab:: Windows
-
-      .. code-block:: text
-
-         > mkdir myproject
-         > cd myproject
-         > py -3 -m venv .venv
-
-
-.. _install-activate-env:
-
-Activate the environment
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Before you work on your project, activate the corresponding environment:
-
-.. tabs::
-
-   .. group-tab:: macOS/Linux
-
-      .. code-block:: text
-
-         $ . .venv/bin/activate
-
-   .. group-tab:: Windows
-
-      .. code-block:: text
-
-         > .venv\Scripts\activate
-
-Your shell prompt will change to show the name of the activated
-environment.
-
-
-Install Flask
--------------
-
-Within the activated environment, use the following command to install
-Flask:
-
-.. code-block:: sh
-
-    $ pip install Flask
-
-Flask is now installed. Check out the :doc:`/quickstart` or go to the
-:doc:`Documentation Overview </index>`.
